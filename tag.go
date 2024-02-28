@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-type Tag uint16
+type Tag uint32
 
 func (tag Tag) String() string {
 	if tag > 0xFF {
