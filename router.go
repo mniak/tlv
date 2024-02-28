@@ -1,20 +1,19 @@
-package utils
+package tlv
 
 import (
 	"fmt"
 
-	"github.com/mniak/encoding"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 )
 
 type mapRouter[K comparable, T any] struct {
-	mapEncoder       encoding.EncoderDecoder[map[K][]byte]
-	subEncoders      map[K]encoding.EncoderDecoder[T]
+	mapEncoder       EncoderDecoder[map[K][]byte]
+	subEncoders      map[K]EncoderDecoder[T]
 	itemDenomination string
 }
 
-func MapRouter[K comparable, T any](itemDenomination string, mapEncoder encoding.EncoderDecoder[map[K][]byte], subEncoders map[K]encoding.EncoderDecoder[T]) encoding.EncoderDecoder[T] {
+func MapRouter[K comparable, T any](itemDenomination string, mapEncoder EncoderDecoder[map[K][]byte], subEncoders map[K]EncoderDecoder[T]) EncoderDecoder[T] {
 	return mapRouter[K, T]{
 		itemDenomination: itemDenomination,
 		mapEncoder:       mapEncoder,

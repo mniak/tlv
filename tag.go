@@ -3,8 +3,6 @@ package tlv
 import (
 	"encoding/binary"
 	"fmt"
-
-	"github.com/mniak/encoding"
 )
 
 type Tag uint16
@@ -18,7 +16,7 @@ func (tag Tag) String() string {
 
 type tlvTagEncoder struct{}
 
-func TagEncoder() encoding.EncoderDecoder[Tag] {
+func TagEncoder() EncoderDecoder[Tag] {
 	return tlvTagEncoder{}
 }
 

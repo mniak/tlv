@@ -1,10 +1,9 @@
-module github.com/mniak/encoding
+module github.com/mniak/tlv
 
 go 1.21.1
 
 require (
 	github.com/brianvoe/gofakeit/v6 v6.28.0
-	github.com/mniak/krypton v0.0.4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/multierr v1.11.0

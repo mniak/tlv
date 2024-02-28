@@ -1,4 +1,4 @@
-package encoding
+package tlv
 
 type Encoder[T any] interface {
 	Encode(state T) ([]byte, error)

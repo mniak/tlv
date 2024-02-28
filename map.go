@@ -1,21 +1,21 @@
-package utils
+package tlv
 
 import (
 	"errors"
 	"fmt"
-
-	"github.com/mniak/encoding"
 )
 
+type Map = map[Tag][]byte
+
 type rawMapEncoder[K comparable] struct {
-	keyEncoder   encoding.EncoderDecoder[K]
-	valueEncoder encoding.EncoderDecoder[[]byte]
+	keyEncoder   EncoderDecoder[K]
+	valueEncoder EncoderDecoder[[]byte]
 }
 
 func RawMap[K comparable](
-	keyEncoder encoding.EncoderDecoder[K],
-	valueEncoder encoding.EncoderDecoder[[]byte],
-) encoding.EncoderDecoder[map[K][]byte] {
+	keyEncoder EncoderDecoder[K],
+	valueEncoder EncoderDecoder[[]byte],
+) EncoderDecoder[map[K][]byte] {
 	return rawMapEncoder[K]{
 		keyEncoder:   keyEncoder,
 		valueEncoder: valueEncoder,
