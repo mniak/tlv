@@ -1,15 +1,11 @@
 package tlv
 
 import (
-	"encoding"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
 func UnmarshalBER(data []byte, v any) error {
@@ -44,119 +40,18 @@ type Unmarshaler interface {
 
 var unmarshalerType = reflect.TypeOf((*Unmarshaler)(nil)).Elem()
 
-func convertValues(rt reflect.Type, values TaggedValuesList, tagopts []string) (reflect.Value, error) {
-	firstValue := []byte(values[0].Value)
+var _ErrInvalidKind = errors.New("invalid kind")
 
-	switch {
-	case rt.Implements(unmarshalerType):
-		reflect.New(rt)
-		return reflect.Value{}, nil
-	case reflect.PointerTo(rt).Implements(unmarshalerType):
-
-		rv := reflect.New(rt)
-		rvi := rv.Interface()
-		bu := rvi.(Unmarshaler)
-
-		if err := bu.Unmarshal(firstValue); err != nil {
-			return reflect.Value{}, err
-		}
-
-		return reflect.ValueOf(bu).Elem(), nil
-
+type (
+	_Converter interface {
+		Convert(ctx _ConvertContext, next _NextConverter) (reflect.Value, error)
 	}
+	_ConverterFunc func(ctx _ConvertContext, next _NextConverter) (reflect.Value, error)
+	_NextConverter func(ctx _ConvertContext) (reflect.Value, error)
+)
 
-	switch rt {
-	case reflect.TypeOf(TLV{}):
-		subtlv, err := ParseBER(firstValue)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		return reflect.ValueOf(subtlv), nil
-	case reflect.TypeOf(TL{}):
-		subtl, err := ParseBERTL(firstValue)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		return reflect.ValueOf(subtl), nil
-	}
-
-	switch rt.Kind() {
-	case reflect.String:
-		if slices.Contains(tagopts, "hex") {
-			return reflect.ValueOf(strings.ToUpper(hex.EncodeToString(firstValue))), nil
-		}
-		return reflect.ValueOf(string(firstValue)), nil
-	case reflect.Int:
-		return reflect.ValueOf(int(getIntFromBytes(firstValue))), nil
-	case reflect.Uint64:
-		return reflect.ValueOf(uint64(getIntFromBytes(firstValue))), nil
-	case reflect.Slice:
-		switch rt.Elem().Kind() {
-		case reflect.Uint8:
-			return reflect.ValueOf(firstValue), nil
-		default:
-			slice := reflect.MakeSlice(rt, len(values), len(values))
-			for idx, value := range values {
-				conv, err := convertValues(rt.Elem(), TaggedValuesList{value}, tagopts)
-				if err != nil {
-					return reflect.Value{}, err
-				}
-				slice.Index(idx).Set(conv)
-			}
-			return slice, nil
-		}
-	case reflect.Interface:
-		if rt.NumMethod() > 0 {
-			return reflect.Value{}, errors.New("tlv unmarshal: interface can't have methods")
-		}
-		return reflect.ValueOf(firstValue), nil
-	case reflect.Struct:
-		obj := reflect.New(rt).Elem()
-		switch bu := obj.Interface().(type) {
-		case encoding.BinaryUnmarshaler:
-			if err := bu.UnmarshalBinary(firstValue); err != nil {
-				return reflect.Value{}, err
-			}
-			return reflect.ValueOf(bu), nil
-		case *encoding.BinaryUnmarshaler:
-			if err := (*bu).UnmarshalBinary(firstValue); err != nil {
-				return reflect.Value{}, err
-			}
-			return reflect.ValueOf(bu), nil
-		default:
-		}
-
-		subtlv, err := ParseBER(firstValue)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		if err := copyToStruct(subtlv, rt, obj); err != nil {
-			return reflect.Value{}, err
-		}
-		return obj, nil
-	case reflect.Map:
-		subtlv, err := ParseBER(firstValue)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		obj := reflect.MakeMap(rt)
-		if err := copyToMap(subtlv, rt, obj); err != nil {
-			return reflect.Value{}, err
-		}
-		return obj, nil
-	case reflect.Pointer:
-		rtsub := rt.Elem()
-		val, err := convertValues(rtsub, values, tagopts)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		ptr := reflect.New(val.Type())
-		ptr.Elem().Set(val)
-		return ptr, nil
-
-	default:
-		return reflect.Value{}, fmt.Errorf("tlv unmarshal: invalid value kind %s", rt.Kind())
-	}
+func (fn _ConverterFunc) Convert(ctx _ConvertContext, next _NextConverter) (reflect.Value, error) {
+	return fn(ctx, next)
 }
 
 func copyToStruct(tlv TLV, rt reflect.Type, rv reflect.Value) error {
@@ -186,11 +81,12 @@ func copyToStruct(tlv TLV, rt reflect.Type, rv reflect.Value) error {
 			continue
 		}
 
-		convertedValue, err := convertValues(field.Type, values, tagsplit[1:])
+		convertedValue, err := convert(field.Type, values, tagsplit[1:])
 		if err != nil {
 			return err
 		}
 		if convertedValue.Type() != field.Type {
+			fmt.Printf("-> Converting from %+v    to    %#+v\n", convertedValue.Type(), field.Type)
 			convertedValue = convertedValue.Convert(field.Type)
 		}
 		rv.Field(i).Set(convertedValue)
@@ -204,10 +100,13 @@ func copyToMap(tlv TLV, rt reflect.Type, rv reflect.Value) error {
 		if err != nil {
 			return err
 		}
-		value, err := convertValues(rt.Elem(), TaggedValuesList{{
-			Tag:   entry.Tag,
-			Value: entry.Value,
-		}}, nil)
+		value, err := convert(rt.Elem(),
+			TaggedValuesList{
+				{
+					Tag:   entry.Tag,
+					Value: entry.Value,
+				},
+			}, nil)
 		if err != nil {
 			return err
 		}
