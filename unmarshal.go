@@ -44,8 +44,8 @@ type Unmarshaler interface {
 
 var unmarshalerType = reflect.TypeOf((*Unmarshaler)(nil)).Elem()
 
-func convertValues(rt reflect.Type, values ValuesList, tagopts []string) (reflect.Value, error) {
-	firstValue := []byte(values[0])
+func convertValues(rt reflect.Type, values TaggedValuesList, tagopts []string) (reflect.Value, error) {
+	firstValue := []byte(values[0].Value)
 
 	switch {
 	case rt.Implements(unmarshalerType):
@@ -97,7 +97,7 @@ func convertValues(rt reflect.Type, values ValuesList, tagopts []string) (reflec
 		default:
 			slice := reflect.MakeSlice(rt, len(values), len(values))
 			for idx, value := range values {
-				conv, err := convertValues(rt.Elem(), ValuesList{value}, tagopts)
+				conv, err := convertValues(rt.Elem(), TaggedValuesList{value}, tagopts)
 				if err != nil {
 					return reflect.Value{}, err
 				}
@@ -204,7 +204,10 @@ func copyToMap(tlv TLV, rt reflect.Type, rv reflect.Value) error {
 		if err != nil {
 			return err
 		}
-		value, err := convertValues(rt.Elem(), ValuesList{entry.Value}, nil)
+		value, err := convertValues(rt.Elem(), TaggedValuesList{{
+			Tag:   entry.Tag,
+			Value: entry.Value,
+		}}, nil)
 		if err != nil {
 			return err
 		}

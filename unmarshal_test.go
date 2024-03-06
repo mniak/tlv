@@ -244,8 +244,8 @@ func TestCopyTo_ListInStruct(t *testing.T) {
 	assert.Equal(t, fakeValue2, result.Strings[1])
 }
 
-func TestCopyTo_TlvField(t *testing.T) {
-	t.Run("When tag 'raw', the parent object", func(t *testing.T) {
+func TestCopyTo_Raw(t *testing.T) {
+	t.Run("When field is TLV", func(t *testing.T) {
 		fakeValue1 := gofakeit.SentenceSimple()
 		fakeValue2 := gofakeit.SentenceSimple()
 
@@ -263,6 +263,26 @@ func TestCopyTo_TlvField(t *testing.T) {
 		assert.Equal(t, bertlv, result.Raw)
 	})
 
+	t.Run("When field is byte slice", func(t *testing.T) {
+		fakeValue1 := gofakeit.SentenceSimple()
+		fakeValue2 := gofakeit.SentenceSimple()
+
+		bertlv := TLV{
+			Entry{Tag: 0x9f12, Value: Value(fakeValue1)},
+			Entry{Tag: 0x9f15, Value: Value(fakeValue2)},
+		}
+
+		var result struct {
+			Raw TLV `tlv:"raw"`
+		}
+		err := bertlv.CopyTo(&result)
+		require.NoError(t, err)
+
+		assert.Equal(t, bertlv, result.Raw)
+	})
+}
+
+func TestCopyTo_TlvField(t *testing.T) {
 	t.Run("When TLV, only the field", func(t *testing.T) {
 		fakeSubValue1 := gofakeit.SentenceSimple()
 		fakeSubValue2 := gofakeit.SentenceSimple()
