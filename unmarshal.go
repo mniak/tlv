@@ -190,6 +190,9 @@ func copyToStruct(tlv TLV, rt reflect.Type, rv reflect.Value) error {
 		if err != nil {
 			return err
 		}
+		if convertedValue.Type() != field.Type {
+			convertedValue = convertedValue.Convert(field.Type)
+		}
 		rv.Field(i).Set(convertedValue)
 	}
 	return nil
