@@ -86,7 +86,6 @@ func copyToStruct(tlv TLV, rt reflect.Type, rv reflect.Value) error {
 			return err
 		}
 		if convertedValue.Type() != field.Type {
-			fmt.Printf("-> Converting from %+v    to    %#+v\n", convertedValue.Type(), field.Type)
 			convertedValue = convertedValue.Convert(field.Type)
 		}
 		rv.Field(i).Set(convertedValue)
