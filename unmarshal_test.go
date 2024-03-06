@@ -20,6 +20,7 @@ func TestCopyTo_Struct(t *testing.T) {
 	fakeValue3 := int(gofakeit.Uint64())
 	fakeValue4 := uint64(gofakeit.Uint64())
 	fakeValue5 := []byte(gofakeit.SentenceSimple())
+	fakeValue6 := gofakeit.Uint8()
 
 	bertlv := TLV{
 		Entry{Tag: 0x9f01, Value: []byte(fakeValue1)},
@@ -27,6 +28,7 @@ func TestCopyTo_Struct(t *testing.T) {
 		Entry{Tag: 0x9f03, Value: binary.BigEndian.AppendUint64(nil, uint64(fakeValue3))},
 		Entry{Tag: 0x9f04, Value: binary.BigEndian.AppendUint64(nil, uint64(fakeValue4))},
 		Entry{Tag: 0x9f05, Value: fakeValue5},
+		Entry{Tag: 0x9f06, Value: []byte{fakeValue6}},
 	}
 
 	t.Run("All fields are required", func(t *testing.T) {
@@ -36,6 +38,7 @@ func TestCopyTo_Struct(t *testing.T) {
 			Value3 int    `tlv:"9f03"`
 			Value4 uint64 `tlv:"9f04"`
 			Value5 string `tlv:"9f05,hex"`
+			Value6 byte   `tlv:"9f06"`
 		}
 		err := bertlv.CopyTo(&object)
 		require.NoError(t, err)
@@ -45,6 +48,7 @@ func TestCopyTo_Struct(t *testing.T) {
 		assert.Equal(t, fakeValue3, object.Value3)
 		assert.Equal(t, fakeValue4, object.Value4)
 		assert.Equal(t, fmt.Sprintf("%2X", fakeValue5), object.Value5)
+		assert.Equal(t, fakeValue6, object.Value6)
 	})
 
 	t.Run("All fields are optional", func(t *testing.T) {
@@ -54,11 +58,13 @@ func TestCopyTo_Struct(t *testing.T) {
 			ValuePresent3 *int    `tlv:"9f03"`
 			ValuePresent4 *uint64 `tlv:"9f04"`
 			ValuePresent5 *string `tlv:"9f05,hex"`
+			ValuePresent6 *byte   `tlv:"9f06"`
 			ValueAbsent1  *string `tlv:"9E01"`
 			ValueAbsent2  []byte  `tlv:"9E02"`
 			ValueAbsent3  *int    `tlv:"9E03"`
 			ValueAbsent4  *uint64 `tlv:"9E04"`
 			ValueAbsent5  *string `tlv:"9E05,hex"`
+			ValueAbsent6  *byte   `tlv:"9E06"`
 		}
 		err := bertlv.CopyTo(&object)
 		require.NoError(t, err)
@@ -68,12 +74,14 @@ func TestCopyTo_Struct(t *testing.T) {
 		assert.Equal(t, fakeValue3, *object.ValuePresent3)
 		assert.Equal(t, fakeValue4, *object.ValuePresent4)
 		assert.Equal(t, fmt.Sprintf("%2X", fakeValue5), *object.ValuePresent5)
+		assert.Equal(t, fakeValue6, *object.ValuePresent6)
 
 		assert.Nil(t, object.ValueAbsent1)
 		assert.Nil(t, object.ValueAbsent2)
 		assert.Nil(t, object.ValueAbsent3)
 		assert.Nil(t, object.ValueAbsent4)
 		assert.Nil(t, object.ValueAbsent5)
+		assert.Nil(t, object.ValueAbsent6)
 	})
 }
 
@@ -437,4 +445,21 @@ func TestUnmarshal_Custom(t *testing.T) {
 		tests.AssertBytesEqual(t, fakeData, result.Value.valueBytes)
 		assert.Equal(t, strings.ToUpper(hex.EncodeToString(fakeData)), result.Value.valueHex)
 	})
+}
+
+func TestCopyTo_SimpleDerivativeType(t *testing.T) {
+	type SubByte byte
+	fakeValue1 := SubByte(gofakeit.Uint8())
+
+	bertlv := TLV{
+		Entry{Tag: 0x9f10, Value: []byte{byte(fakeValue1)}},
+	}
+
+	var result struct {
+		Field1 SubByte `tlv:"9f10"`
+	}
+	err := bertlv.CopyTo(&result)
+	require.NoError(t, err)
+
+	assert.Equal(t, fakeValue1, result.Field1)
 }
