@@ -5,7 +5,7 @@ go 1.21.1
 require (
 	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 )
