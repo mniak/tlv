@@ -1,6 +1,7 @@
 package tlv
 
 import (
+	"bytes"
 	"fmt"
 )
 
@@ -30,7 +31,7 @@ func (tlv TLV) GetValue(t Tag) Value {
 	return nil
 }
 
-func (tlv TLV) MakeValuesList(list TL) (TaggedValuesList, error) {
+func (tlv TLV) MakeValuesList(tlList TL) (TaggedValues, error) {
 	padData := func(data []byte, length int) []byte {
 		if len(data) < length {
 			data = append(make([]byte, length-len(data)), data...)
@@ -39,22 +40,25 @@ func (tlv TLV) MakeValuesList(list TL) (TaggedValuesList, error) {
 	}
 
 	var results TLV
-	for _, entry := range list {
-		value := tlv.GetValue(entry.Tag)
+	for _, tl := range tlList {
+		value := tlv.GetValue(tl.Tag)
 		if len(value) == 0 {
-			return nil, fmt.Errorf("missing data for object list: tag %s", entry.Tag)
+			return nil, fmt.Errorf("missing value for tag %s", tl.Tag)
 		}
-		value = padData(value, entry.Length)
+		if len(value) != tl.Length {
+			return nil, fmt.Errorf("value of tag %s has a different length than the specified", tl.Tag)
+		}
+		value = padData(value, tl.Length)
 		results = append(results, Entry{
-			Tag:    entry.Tag,
-			Length: entry.Length,
+			Tag:    tl.Tag,
+			Length: tl.Length,
 			Value:  value,
 		})
 	}
 	return results.Values(), nil
 }
 
-func (tlv TLV) GetList(t Tag) TaggedValuesList {
+func (tlv TLV) GetList(t Tag) TaggedValues {
 	var result []TaggedValue
 	for _, entry := range tlv {
 		if entry.Tag == t && entry.Value != nil {
@@ -67,8 +71,8 @@ func (tlv TLV) GetList(t Tag) TaggedValuesList {
 	return result
 }
 
-func (tlv TLV) Values() TaggedValuesList {
-	list := make(TaggedValuesList, 0)
+func (tlv TLV) Values() TaggedValues {
+	list := make(TaggedValues, 0)
 	for _, item := range tlv {
 		list = append(list, TaggedValue{
 			Tag:   item.Tag,
@@ -76,4 +80,20 @@ func (tlv TLV) Values() TaggedValuesList {
 		})
 	}
 	return list
+}
+
+func (tlv TLV) Bytes() ([]byte, error) {
+	var buf bytes.Buffer
+	for _, entry := range tlv {
+		tagBytes, err := entry.Tag.Encode()
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(tagBytes)
+		// Encode TAG according to BER rules
+		lenValue := len(entry.Value)
+		buf.WriteByte(byte(lenValue))
+		buf.Write(entry.Value)
+	}
+	return buf.Bytes(), nil
 }

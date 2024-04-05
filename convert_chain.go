@@ -45,7 +45,7 @@ func _BaseConverter(ctx _ConvertContext) (reflect.Value, error) {
 	return reflect.Value{}, _ErrInvalidKind
 }
 
-func convert(rt reflect.Type, values TaggedValuesList, tagopts []string) (reflect.Value, error) {
+func convert(rt reflect.Type, values TaggedValues, tagopts []string) (reflect.Value, error) {
 	initConverter()
 	ctx := _ConvertContext{
 		rt:      rt,
@@ -57,6 +57,6 @@ func convert(rt reflect.Type, values TaggedValuesList, tagopts []string) (reflec
 
 type _ConvertContext struct {
 	rt      reflect.Type
-	values  TaggedValuesList
+	values  TaggedValues
 	tagopts []string
 }
