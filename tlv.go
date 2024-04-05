@@ -1,10 +1,7 @@
 package tlv
 
 import (
-	"bytes"
 	"fmt"
-
-	"go.uber.org/multierr"
 )
 
 type (
@@ -13,14 +10,6 @@ type (
 		Tag    Tag
 		Length int
 		Value  Value
-	}
-)
-
-type (
-	TL      []TLEntry
-	TLEntry struct {
-		Tag    Tag
-		Length int
 	}
 )
 
@@ -87,41 +76,4 @@ func (tlv TLV) Values() TaggedValuesList {
 		})
 	}
 	return list
-}
-
-type TaggedValue struct {
-	Tag   Tag
-	Value Value
-}
-type TaggedValuesList []TaggedValue
-
-func (list TaggedValuesList) Bytes() []byte {
-	var buff bytes.Buffer
-	for _, item := range list {
-		buff.Write(item.Value)
-	}
-	return buff.Bytes()
-}
-
-func (list TaggedValuesList) AsBERTLV() ([]TLV, error) {
-	var errs error
-	var result []TLV
-	for _, val := range list {
-		ber, err := ParseBER(val.Value)
-		if err != nil {
-			multierr.AppendInto(&errs, err)
-		} else {
-			result = append(result, ber)
-		}
-	}
-	return result, errs
-}
-
-func (vl TaggedValuesList) GetValue(t Tag) Value {
-	for _, entry := range vl {
-		if entry.Tag == t {
-			return entry.Value
-		}
-	}
-	return nil
 }
