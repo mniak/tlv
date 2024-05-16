@@ -86,6 +86,18 @@ func TestTagEncoder_ExamplesInVisaDocumentation(t *testing.T) {
 				assert.NotEmpty(t, encoded)
 				assert.Equal(t, td.bytes, encoded)
 			})
+
+			t.Run("Encode by tag then Decode", func(t *testing.T) {
+				encoded, err := Tag(td.number).Encode()
+				require.NoError(t, err)
+				assert.NotEmpty(t, encoded)
+
+				var decoded Tag
+				read, err := enc.Decode(&decoded, append(encoded, []byte{0x99, 0x88, 0x77}...))
+				require.NoError(t, err)
+				assert.Equal(t, td.number, uint(decoded))
+				assert.Equal(t, len(encoded), read)
+			})
 		})
 	}
 }

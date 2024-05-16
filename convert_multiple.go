@@ -12,7 +12,7 @@ func _ConvertSlice(ctx _ConvertContext, next _NextConverter) (reflect.Value, err
 	default:
 		slice := reflect.MakeSlice(ctx.rt, len(ctx.values), len(ctx.values))
 		for idx, value := range ctx.values {
-			conv, err := convert(ctx.rt.Elem(), TaggedValuesList{value}, ctx.tagopts)
+			conv, err := convert(ctx.rt.Elem(), TaggedValues{value}, ctx.tagopts)
 			if err != nil {
 				return reflect.Value{}, err
 			}

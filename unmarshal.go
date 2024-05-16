@@ -100,7 +100,7 @@ func copyToMap(tlv TLV, rt reflect.Type, rv reflect.Value) error {
 			return err
 		}
 		value, err := convert(rt.Elem(),
-			TaggedValuesList{
+			TaggedValues{
 				{
 					Tag:   entry.Tag,
 					Value: entry.Value,
