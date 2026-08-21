@@ -1,9 +1,10 @@
 module github.com/mniak/tlv
 
-go 1.21.1
+go 1.22
 
 require (
 	github.com/brianvoe/gofakeit/v6 v6.28.0
+	github.com/brianvoe/gofakeit/v7 v7.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/multierr v1.11.0
